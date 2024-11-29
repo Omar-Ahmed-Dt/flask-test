@@ -1,49 +1,17 @@
-name: Deploy to AWS with Cased
-
+name: deploy
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Branch to deploy"
         required: false
         default: main
       target_name:
-        description: "Deployment target (e.g., staging or production)"
         required: false
         default: production
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Step 2: Use AWS credentials from Cased
-      - name: Assume Role with Cased
-        env:
-          AWS_REGION: us-west-2                     # Replace with your selected region
-          ROLE_ARN: ${{ secrets.CASED_AWS_ROLE_ARN }} # ARN from Cased connection
+      - name: Deploy to target
         run: |
-          echo "Assuming role using Cased..."
-          aws sts assume-role \
-            --role-arn $ROLE_ARN \
-            --role-session-name "CasedSession" > creds.json
-          export AWS_ACCESS_KEY_ID=$(cat creds.json | jq -r '.Credentials.AccessKeyId')
-          export AWS_SECRET_ACCESS_KEY=$(cat creds.json | jq -r '.Credentials.SecretAccessKey')
-          export AWS_SESSION_TOKEN=$(cat creds.json | jq -r '.Credentials.SessionToken')
-
-      # Step 3: Deploy the application
-      - name: Deploy Flask App
-        env:
-          AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-          AWS_SESSION_TOKEN: $AWS_SESSION_TOKEN
-        run: |
-          echo "Deploying branch ${{ inputs.branch }} to target ${{ inputs.target_name }}..."
-          ssh -i private_key.pem ec2-user@<EC2_PUBLIC_IP> << EOF
-            cd ~/flask-app
-            git pull origin ${{ inputs.branch }}
-            nohup python3 app.py &
-          EOF
+          echo "Deploying to ${{ inputs.target }} from ${{ inputs.branch }}"
